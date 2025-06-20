@@ -3,25 +3,23 @@
 #include <string.h>
 
 /*
-  sort list of names 
+  1) create a list of name 
 
-  Args:
+  2) pass list of names to name_sorter, name_sorter will modify list provided by caller 
 
-    names - pointer to memory location with names  
-    num_of_names - number of in memory location of names 
-    size - number of characters per entry (null terminated not included in size)
- 
+  // NAME_LENGTH + 1 allow the system to provide us with access to all its memory (moving the termination char ahead)
+
 */
 void name_sorter( char *names, int num_of_names, int size) {
 
   char buffer1[size + 1];
   char buffer2[size + 1];
-  char tmp[size + 1];
   int null_not_included_in_size = 1;
   int effective_len = (size + null_not_included_in_size);
 
   // laymans bubble sort 
   for(int i = 0; i < num_of_names; i++) {
+
     for (int k = i + 1; k < num_of_names; k++) {
 
       // copy comparable values to buffer
@@ -32,10 +30,6 @@ void name_sorter( char *names, int num_of_names, int size) {
         // swap, update names memory 
         memcpy(names + effective_len * i,  buffer2, effective_len);
         memcpy(names + effective_len * k, buffer1, effective_len);
-
-        //clear buffers 
-        memset(buffer1, 0, size);
-        memset(buffer2, 0, size);
 
       }
     }
