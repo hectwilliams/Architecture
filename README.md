@@ -64,6 +64,8 @@
 
   -emit-obj
 
+    ...
+
   -mrelax-all
 
     Enables all optimizations 
