@@ -94,29 +94,29 @@
 
     MODE Options:
 
-      - **Static** 
+      - __Static__
         
         - Used for shared libraries 
 
         - Typical used on embddeded Systems
       
-      - **PIC (Poisition Independant Code)**
+      - __PIC (Poisition Independant Code)__
 
         - Generated code run at any memory address 
 
         - Use for shared libraries 
 
-      - **Dynamic**
+      - __Dynamic__
 
         - Used for dynamic linking
         
         - Rarely Used
       
-      - **Read Only Position Independence**
+      - __Read Only Position Independence__
 
         - Used for embedded systems for fine grained control 
   
-     *M-Relocation Model is concept used in facility location or logistics. It involves reassigning resources or services to minimize costs*
+     __M-Relocation Model is concept used in facility location or logistics. It involves reassigning resources or services to minimize costs__
 
   -pic-level
 
