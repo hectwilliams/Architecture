@@ -48,11 +48,11 @@
 
   -Wunder-prefix
 
-    Warns of undefined identifier prefixed with TARGET_OS is evaluated ( #if directive )
+    Compiler warns if undefined identifiers prefixed with TARGET_OS are evaluated ( #if directive )
 
   -Wdeprecated-objc-isa-usage
 
-    Warns about the usage of isa in Objectice-C ( isa is deprecated )
+    Compiler warns of isa in Objectice-C ( isa is deprecated )
 
   -Werror 
 
@@ -60,7 +60,7 @@
 
   -Werror=implicit-function-declaration     
 
-    Warnings of attempted usage of functions not yet declared are treated as errors 
+    Compiler warns of functions not yet declared and elevates those warning to errors 
 
   -emit-obj
 
@@ -90,33 +90,33 @@
 
   -mrelocation-model MODE
 
-    control trade-off between performance and flexibility 
+    Control trade-off between performance and flexibility 
 
     MODE Options:
 
-      - __Static__
+      - Static
         
         - Used for shared libraries 
 
         - Typical used on embddeded Systems
       
-      - __PIC (Poisition Independant Code)__
+      - PIC (Poisition Independant Code)
 
         - Generated code run at any memory address 
 
         - Use for shared libraries 
 
-      - __Dynamic__
+      - Dynamic
 
         - Used for dynamic linking
         
         - Rarely Used
       
-      - __Read Only Position Independence__
+      - Read Only Position Independence
 
         - Used for embedded systems for fine grained control 
   
-     __M-Relocation Model is concept used in facility location or logistics. It involves reassigning resources or services to minimize costs__
+      M-Relocation Model is concept used in facility location or logistics. It involves reassigning resources or services to minimize costs
 
   -pic-level
 
@@ -128,13 +128,181 @@
   
   -fno-strict-return
 
-    Disable optimizations which mask strict return type rule
+    Compiler disable optimizations which mask strict return type rule
 
-  -ffp-contract=on
+  -ffp-contract
 
-    Enable floating point contraction 
+    Compiler enable floating point contraction 
 
-  -
+  -fno-rounding-math
 
+    Disables potentially unsafe or unportable optimization related to rounding and floating point. Compiler will always round-to-nearest set forth by program.  
+  
+  -funwind-tables
+
+    Compiler generates unwinding tables used by debugging tools like gdb 
+
+  -target-sdk-version
+
+    Compiler sets target sdk version
+
+  -fvisibility-inlines-hidden-static-local-var 
+    ...
+
+  -target-cpu  
+
+    Generate code for cpu-type 
+
+  -debug-info-kind=standalone 
+
+    Generate standalone debug information 
+
+  -dwarf-version
+
+    Dwarf is a debugging file format; with clang it provides efficient debugging and analysis 
+
+  -debugger-tuning
+
+    Compiler sets tuning debugger 
+
+  -target-linker
+
+    Compiler sets linker version 
+
+  -fcoverage-compilation-dir
+
+    Compiler sets compilation directory to embed in the coverage mapping 
+
+  -resource-dir 
+
+    Compiler sets directory for clang headers and runtime libraries 
+
+  -I
+
+    Compiler sets path to custom or external header files 
+
+  -internal-isystem 
+
+    Compiler sets directory used to search system header files 
+
+  -internal-externc-isystem
+
+    Compiler sets directory used to search for C system header files used when integrating with C++ 
+
+  -Wall
+
+    Compiler enables all warnings messages 
+
+  -Wno-reorder-init-list 
+
+    Suppress warning about compiler reordering initialized lit 
+
+  -Wno-implicit-int-float-conversion 
+
+    Suppress int to float conversion warning
+
+  -Wno-c99-designator 
+
+    ...
+
+  -Wno-final-dtor-non-final-class 
+
+    ...
+
+  -Wno-extra-semi-stmt 
+
+    ...
+  
+  -Wno-misleading-indentation 
+
+    Suppress code indentation warnings
+
+  -Wno-quoted-include-in-framework-header 
+
+    Suppress warning for double quoted includes
+
+  -Wno-implicit-fallthrough 
+
+    Suppress fallthrough warnings
+
+  -Wno-enum-enum-conversion 
+
+    Suppress warnings when two different enumeration types are applied to am operand 
+
+  -Wno-enum-float-conversion 
+
+    Suppress arithmetic warning when enum and float type are applied to operand
+
+  -Wno-elaborated-enum-base 
+  
+    Suppress warning if an invalid enum-base is used in an elaborated type specifier 
+
+  -Wno-reserved-identifier 
+    
+    Suppress warnings when reserved identifiers are used
+
+  -Wno-gnu-folding-constant 
+
+    Suppress warning when compiler converts a constant variable to a constant expression
+
+  -fdebug-compilation-dir
+
+    Compiler sets paths in debug information 
+ 
+  -ferror-limit 
+
+    Compiler stops emitting diagnostics when error limit is reached 
+
+  -stack-protector
+
+    Compiler protects functions vulnerable to buffer overflows 
+
+  -fstack-check 
+
+    compiler performs stack overflow checking 
+
+  -mdarwin-stkchk-strong-link 
+    
+    ...
+
+  -fblocks
+
+    Compiler supports Apple's Block extension allowing creation of closures 
+
+  -fencode-extended-block-signature 
+
+    Compiler encodes classes and protocols in signature of block descriptors 
+
+  -fregister-global-dtors-with-atexit 
+
+    Compiler registers destructor functions annotated with __attribute((destructor))
+
+  -fgnuc-version
+
+    Compiler sets GNUC and related macros 
+
+  -fmax-type-align=16 
+
+    Compiler sets maximum alignment to enfore on pointers 
+
+  -fcommon
+
+    Compiler will place uninitialized global variables in a common block
+
+  -fcolor-diagnostics
+
+    Compiler enables colored diagnostics 
+  
+  -clang-vendor-feature
+
+    Compiler sets hardware/platform specific compiler features 
+
+  -fno-odr-hash-protocols 
+
+    Compiler expects all hash protocol functions to meeting ODR(One Definition Rule) requirement
+
+  -D__GCC_HAVE_DWARF2_CFI_ASM
+
+    Compiler sets macro that controls emission of DWARF CFI(Control Flow Directives) to assembler 
 
 ------------
