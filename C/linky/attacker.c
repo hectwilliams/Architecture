@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 
 extern int hermes; 
 
@@ -10,11 +9,8 @@ extern int hermes;
 */
 void attack_hermes () {
 
-  for (int i =0; i < 10; i++) {
-    sleep(1);
-    hermes -=  (rand() % 10);
-    printf("hermes attacked, altitude = %d\n", hermes);    
-  }
+  hermes -=  (rand() % 10);
+  printf("hermes attacked, altitude = %d\n", hermes);    
 
 }
 
