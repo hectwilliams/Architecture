@@ -1,0 +1,168 @@
+
+command:
+
+linky % gcc -Wall -g -c main.c fly.c  attack.c  ; gcc -o main fly.o attack.o main.o
+
+
+verbose output:
+
+"/Library/Developer/CommandLineTools/usr/bin/clang" 
+-cc1 
+
+-triple x86_64-apple-macosx14.0.0 
+
+-Wundef-prefix=TARGET_OS_ 
+
+-Wdeprecated-objc-isa-usage 
+
+-Werror=deprecated-objc-isa-usage 
+
+-Werror=implicit-function-declaration 
+
+-emit-obj 
+
+-mrelax-all 
+
+-disable-free 
+
+-clear-ast-before-backend 
+
+-disable-llvm-verifier 
+
+-discard-value-names 
+
+-main-file-name attack.c 
+
+-mrelocation-model pic 
+
+-pic-level 2 
+
+-mframe-pointer=all 
+
+-fno-strict-return 
+
+-ffp-contract=on 
+
+-fno-rounding-math 
+
+-funwind-tables=2 
+
+-target-sdk-version=15.2 
+
+-fvisibility-inlines-hidden-static-local-var 
+
+-fno-modulemap-allow-subdirectory-search 
+
+-target-cpu penryn 
+
+-tune-cpu generic 
+
+-debug-info-kind=standalone 
+
+-dwarf-version=4 
+
+-debugger-tuning=lldb 
+
+-target-linker-version 1115.7.3 
+
+-v 
+
+-fcoverage-compilation-dir=/Users/hectorwilliams/Documents/Architecture/C/linky 
+
+-resource-dir /Library/Developer/CommandLineTools/usr/lib/clang/16 
+
+-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk 
+
+-I/usr/local/include 
+
+-internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include 
+
+-internal-isystem /Library/Developer/CommandLineTools/usr/lib/clang/16/include 
+
+-internal-externc-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include 
+
+-internal-externc-isystem /Library/Developer/CommandLineTools/usr/include 
+
+-Wall 
+
+-Wno-reorder-init-list 
+
+-Wno-implicit-int-float-conversion 
+
+-Wno-c99-designator 
+
+-Wno-final-dtor-non-final-class 
+
+-Wno-extra-semi-stmt 
+
+-Wno-misleading-indentation 
+
+-Wno-quoted-include-in-framework-header 
+
+-Wno-implicit-fallthrough 
+
+-Wno-enum-enum-conversion 
+
+-Wno-enum-float-conversion 
+
+-Wno-elaborated-enum-base 
+
+-Wno-reserved-identifier 
+
+-Wno-gnu-folding-constant 
+
+-fdebug-compilation-dir=/Users/hectorwilliams/Documents/Architecture/C/linky 
+
+-ferror-limit 19 
+
+-stack-protector 1 
+
+-fstack-check 
+
+-mdarwin-stkchk-strong-link 
+
+-fblocks 
+
+-fencode-extended-block-signature 
+
+-fregister-global-dtors-with-atexit 
+
+-fgnuc-version=4.2.1 
+
+-fmax-type-align=16 
+
+-fcommon 
+
+-fcolor-diagnostics 
+
+-clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation 
+
+-fno-odr-hash-protocols 
+
+-clang-vendor-feature=+enableAggressiveVLAFolding 
+
+-clang-vendor-feature=+revert09abecef7bbf 
+
+-clang-vendor-feature=+thisNoAlignAttr 
+
+-clang-vendor-feature=+thisNoNullAttr 
+
+-clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError 
+
+-D__GCC_HAVE_DWARF2_CFI_ASM=1 
+
+-o attack.o 
+
+-x c attack.c
+
+clang -cc1 version 16.0.0 (clang-1600.0.26.6) default target x86_64-apple-darwin23.6.0
+ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include"
+ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/Library/Frameworks"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/local/include
+ /Library/Developer/CommandLineTools/usr/lib/clang/16/include
+ /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include
+ /Library/Developer/CommandLineTools/usr/include
+ /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)
+End of search list.
