@@ -4,7 +4,6 @@ using namespace std;
 
 // c++ style functions
 
-
 int main() {
   
   std::cout << location() << std::endl;
