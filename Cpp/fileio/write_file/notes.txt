@@ -1,0 +1,4 @@
+links
+https://cplusplus.com/reference/fstream/ifstream/
+https://en.cppreference.com/w/cpp/io/basic_streambuf.html
+https://en.cppreference.com/w/cpp/io/c/setbuf.html
