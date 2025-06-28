@@ -6,6 +6,10 @@
 
 class Adolescent : public Baby {
 
+  private:
+  
+    const static std::string gf_name;
+
   public :
     
     Adolescent ();

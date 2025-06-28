@@ -17,3 +17,5 @@ const bool Adolescent::is_virgin = false;
 const bool Adolescent::used_drugs = false; 
 const bool Adolescent::is_athletic = true; 
 bool Adolescent::is_walking = true; 
+
+const  std::string Adolescent::gf_name = "becky";

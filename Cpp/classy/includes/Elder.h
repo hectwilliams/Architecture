@@ -6,6 +6,10 @@
 
 class Elder : public Adolescent {
 
+  protected :
+
+    const static bool has_cancer; // protected (keep within family)
+
   public :
     
     Elder ();
@@ -17,6 +21,9 @@ class Elder : public Adolescent {
     const static bool is_dying; 
 
      void speak();
+
+     void ailments();
+     
 };
 
 #endif 
