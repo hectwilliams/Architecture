@@ -12,10 +12,7 @@
 
 int main() {
 
-  const unsigned int buffer_size = 512; 
-  const unsigned int num_samples = 2048; 
-
-  char buffer[buffer_size];
+  char buffer[BUFFER_SIZE];
 
   std::ifstream file;
   
@@ -27,7 +24,7 @@ int main() {
   
   file.open("time.csv", std::ifstream::in);
   
-  file.getline(buffer, buffer_size);
+  file.getline(buffer, BUFFER_SIZE);
 
   while (file.good()) {
     
@@ -37,17 +34,17 @@ int main() {
       
     }
     
-    file.getline(buffer, buffer_size);
+    file.getline(buffer, BUFFER_SIZE);
     
     counter += 1;
     
   }
   
-  data_in->resize(num_samples);
+  data_in->resize(NUM_SAMPLES);
   
   SimpleProcessor<double> proc( *data_in); // use default Template Type
 
-  proc.print_stdout();
+  // proc.print_stdout();
 
   proc.dft();
 
