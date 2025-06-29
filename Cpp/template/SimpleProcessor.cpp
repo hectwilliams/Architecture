@@ -179,7 +179,7 @@ void run_simple_processor() {
 
     file.getline(buffer, BUFFER_SIZE);
 
-    while (file.good()) {
+    while (file.good() && counter < NUM_SAMPLES) {
       
       if (counter >= 0) {
 
