@@ -64,4 +64,15 @@ void dft_helper(const std::vector<T> &data);
 template< typename T>
 void print_stdout_helper(const std::vector<T> &data);
 
+/*
+  functions:
+
+    run_simple_processor
+
+  remarks:
+
+    routine utilizing SimpleProcessor
+*/
+void run_simple_processor();
+
 #endif 

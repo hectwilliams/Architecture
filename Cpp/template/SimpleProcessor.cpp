@@ -3,18 +3,20 @@
 #include <SimpleProcessor.h>
 #include <complex>
 #include <fstream> 
+#include <regex>
+#include <system_error>
 
 template<>
 SimpleProcessor<double>::SimpleProcessor( std::vector<double> &data_in) : data(data_in){
 
-  std::cout << "starting to process doubles" << std::endl; 
+  std::cout << "processor rcvd doubles" << std::endl; 
 
 }
 
 template<>
 SimpleProcessor<int>::SimpleProcessor( std::vector<int> &data_in) : data(data_in){
 
-  std::cout << "starting to process integers" << std::endl; 
+  std::cout << "processor rcvd int" << std::endl; 
 
 }
 
@@ -70,7 +72,7 @@ void print_stdout_helper(const std::vector<T> &data) {
 template<typename T>
 void dft_helper(const std::vector<T> &data) {
   
-  //computes discrete fourier transform and writes data to file fft_out.txt
+  //computes discrete fourier transform and writes data to out.txt
 
   std::ifstream some_file_csv;
   
@@ -84,7 +86,7 @@ void dft_helper(const std::vector<T> &data) {
 
   unsigned N = static_cast < unsigned >(data.size());
   
-  std::vector<long double> *pad = new std::vector<long double>(N, static_cast<long double>(0)) ;
+  std::vector< double> *pad = new std::vector< double>(N, static_cast< double>(0)) ;
 
   try
   {
@@ -128,7 +130,7 @@ void dft_helper(const std::vector<T> &data) {
   
   // log normal  
 
-  for(std::vector<long double>::iterator it = pad->begin(); it != pad->end(); ++it) {
+  for(std::vector< double>::iterator it = pad->begin(); it != pad->end(); ++it) {
     
     s = std::to_string(20*std::log10(*it/max_value)) + "\n";
     
@@ -140,3 +142,70 @@ void dft_helper(const std::vector<T> &data) {
   
 }
 
+void run_simple_processor() {
+
+  /*
+    Actions 
+
+      1. create and truncate out.txt file
+
+      2. dynamically store time.csv column-2 data into vector object
+
+      3. Use simple processor to run FFT on data 
+
+      4. magnitude log normalize FFT processed data 
+
+      5. write data in step 4 to out.txt file 
+
+      6. delete dynamically allocated resources 
+
+  */
+
+  char buffer[BUFFER_SIZE];
+
+  std::ifstream file;
+
+  int counter = -1;
+
+  std::regex regex_pattern(".+,");
+
+  std::vector<double> *data_in = new std::vector<double>(100e3, 0.0);
+
+  try {
+
+    file.open("time.csv", std::ifstream::in);
+
+  } catch(const std::system_error &e) {
+    
+    std::cerr << "Caught system error: " << e.what() << '\n';
+   
+  }
+
+  file.getline(buffer, BUFFER_SIZE);
+
+  while (file.good()) {
+    
+    if (counter >= 0) {
+
+      data_in->at(counter)= std::stod( std::regex_replace(buffer, regex_pattern , "") );
+      
+    }
+    
+    file.getline(buffer, BUFFER_SIZE);
+    
+    counter += 1;
+    
+  }
+
+  data_in->resize(NUM_SAMPLES);
+
+  SimpleProcessor<double> proc( *data_in); 
+
+  // proc.print_stdout();
+
+  proc.dft();
+
+  file.close(); 
+
+  delete data_in;
+}
