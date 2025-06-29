@@ -5,6 +5,8 @@
 #define SIMPLE_PROC_H
 
 #define PI 3.141
+#define BUFFER_SIZE 512
+#define NUM_SAMPLES 2048
 
 template<class T> // default template 
 
