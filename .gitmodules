@@ -1,0 +1,3 @@
+[submodule "Cpp/reviews/multifiles/task_001/plog"]
+	path = Cpp/reviews/multifiles/task_001/plog
+	url = https://github.com/SergiusTheBest/plog
