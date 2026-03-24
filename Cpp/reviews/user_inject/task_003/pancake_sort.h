@@ -12,7 +12,7 @@
 /**
  * @brief Prints stack of pancakes. 
  *
- * @param cakes Vector container of integers 
+ * @param cakes Container of integers 
 */
 void print (std::vector<int>&cakes);
 
@@ -20,7 +20,7 @@ void print (std::vector<int>&cakes);
 /**
  * @brief Enter pancakes using interactive prompt 
  * 
- * @param cakes Vector container of integers (represents pancakes)
+ * @param cakes Container of integers (represents pancakes)
  * 
 */
 void get_cakes_user(std::vector<int>&cakes);
@@ -33,11 +33,11 @@ void reset_terminal();
 
 
 /**i
- * @brief User select pankcake loading  method.
- * Two methods exist:
- * 1) Read pancakes.txt file and list pancake sizes
- * 2) User enters pancake sizes(integers) per repeated request (-1 shuts down interactive method)
- * After loading pankcake radi the stack of cakes are printed to stdout
+ * @brief User selects menu option.
+ * Option 1) User enters pancake sizes(integers) per repeated request (-1 shuts down interactive method)
+ * Option 2) View stack of pancakes
+ * Option 3) Sort pancakes 
+ * Option 0) Stop program  
  *
  * @param cakes Container of integers (ie pancakes)
 */
