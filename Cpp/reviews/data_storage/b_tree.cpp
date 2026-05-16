@@ -34,6 +34,17 @@ class BTree {
     RefList<T> *root;
     
     /**
+     * View pages in RefList
+     *
+     * @param list Pointer to RefList  
+     */
+    void view_list(RefList<T> *list) {
+        for (int i = 0; i < PAGESIZE &&  (*list)[i] !=nullptr ; i++) {
+            std::cout << "[" << (*list)[i]->value << "]";
+        }
+        std::cout << '\n';
+    }
+    /**
      * Update leaf RefLists 
      *  
      * @param parent_list Parent RefList 
@@ -51,91 +62,63 @@ class BTree {
             return;
         }
         
-        // effective index (parent RefList)
-        switch(index) {
-            case -1:
-                eff_index = 0;
-                break;
-            case PAGESIZE:
-                eff_index = 4;
-                break;
-            default:
-                eff_index = index; 
-        }
-        
         // number of active parent pages 
         while((*parent_list)[n_active_parent_pg++]);
         n_active_parent_pg--; 
-        
-        std::cout << eff_index << '\t' << index << " " << n_active_parent_pg<<'\n';
-        
-        // // std::cout << "LARGE NUMBER " << index <<'\n';
+            
         if(n_active_parent_pg < PAGESIZE){
-            if (index == -1) {
-                // insert value before first parent page
-                
-                // save page the first parent page references 
-                child_list = (*parent_list)[0]->ref;
-
-                // shift/move parent pages to right by 1
-                for(int i = PAGESIZE-1; i >0; i-- ) 
-                    (*parent_list)[i] = (*parent_list)[i-1] ;
-                
-                // assign page to parent RefList
-                RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 0 };
-                (*parent_list)[eff_index] = new_parent_page; 
-                
-                // point new parent page to RefList referencing by others in parent list 
-                new_parent_page->ref = child_list;
-
-                // shift/move child pages to right by 1
-                for(int i = PAGESIZE-1; i >0; i-- ) 
-                    (*child_list)[i] = (*child_list)[i-1] ;
-                
-                // add leaf node to child_list; simply set eff_index in child_list to new page with same info as parent node 
-                RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 0 };
-                (*child_list)[eff_index] = new_child_page; 
-                
-
-            } else if (index < PAGESIZE){
-                std::cout <<  target <<" " << index  << '\n';
-                // insert after last active page
-                // assign page to parent RefList
-                
-                  // save page the first parent page references 
-                child_list = (*parent_list)[0]->ref;
-                
-                // std::cout <<  "child_list " << (*child_list)[0] << '\n';
-                
-                RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 0 };
-                (*parent_list)[eff_index] = new_parent_page; 
-                
-                // std::cout <<  "child_list " << (*parent_list)[1] << '\n';
-                
-                //  // save page the first parent page references 
-                // child_list = (*parent_list)[1]->ref;
-                // std::cout <<  "PARENT2 " << (*child_list)[0]->value << '\n';
-                
-                // //  // point new parent page to RefList referencing by others in parent list 
-                // new_parent_page->ref = child_list;
-                
-                // RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 0 };
-                // (*child_list)[eff_index] = new_child_page; 
-                
-            } else {
-                
+            // effective index (parent RefList)
+            switch(index) {
+                case -1:
+                    eff_index = 0;
+                    break;
+                case PAGESIZE:
+                    eff_index = 4;
+                    break;
+                default:
+                    eff_index = index; 
             }
             
-            // std::cout << "-------DEBUG" << '\n';
-            //     for ( int  idx =0; idx < n_active_parent_pg + 1; idx++) {
-                    
-            //     std::cout <<  "PARENT [" <<  idx <<"]" << (*parent_list)[idx]->value << '\n';
-            //     // std::cout <<  "PARENT1 " << (*parent_list)[1]->value << '\n';
+            // save child page which active parent pages reference 
+            child_list = (*parent_list)[0]->ref;
+            
+            // check if target in-between
+            if ((*parent_list)[eff_index]) {
+               if (target >=  (*parent_list)[eff_index]->value  ) {
+                   eff_index += 1;
+               }
+            }
+            
+            if ((*parent_list)[eff_index] == nullptr ) {
+               // add childpage and parent page to child and parent list, respectively
+            } else if (eff_index + 1 < PAGESIZE){
+                // shift pages to the right in front of page at eff_index position 
+                for (int i = PAGESIZE-1; i > eff_index ; i--) {
+                    // shift and free page for next write operation 
+                    (*parent_list)[i] =  (*parent_list)[i - 1];
+                    (*child_list)[i] =  (*child_list)[i - 1];
+                }
+            }
+            
+            // write new page to parent list 
+            RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 0 };
+            (*parent_list)[eff_index] = new_parent_page;
+            
+            // point new parent page to child list 
+            new_parent_page->ref =  child_list;
+            
+            // write child page
+            RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 0 };
+            (*child_list)[eff_index] = new_child_page; 
+            
+            // verify
+            view_list(parent_list);
+            view_list(child_list);
+            std::cout << "----checked\n";
+
                 
-            //     std::cout <<  "CHILD [" <<  idx <<"]" << (*child_list)[idx]->value << '\n';
-            //     // std::cout <<  "CHILD1 " << (*child_list)[1]->value << '\n';
-            //     }
-                
+        } else {
+            std::cout << "NOT READY" << '\n';
         }
         
     }
@@ -169,6 +152,8 @@ public:
             SearchTuple<T> tuple;
             RefList<T> list = (*parent);
             
+            view_list(parent);
+
             // set farthest null index
             while(list[--parent_list_null_index]);
             
@@ -205,7 +190,7 @@ public:
         RefList<T> *node_list = root; /* RefList*/
         RefList<T> *prev_node_list;; /* Parent of previous node*/
         RefNode<T> *node ;
-        int i=-1;
+        int i;
         
         if (!node_list) {
             return {nullptr, i};    
@@ -214,34 +199,52 @@ public:
         prev_node_list= root;
         
         while (node_list /* RefList*/) {
-            for (i =0; i < PAGESIZE; i++) {
+            
+            // for (i =0; i < PAGESIZE; i++) {
                 node = (*node_list)[i]; // node in current RefList; at least one node exist in RefLists
-                if ( node == nullptr || (node->ref != nullptr)) {
-                    // nonleaf nodes 
-                    
-                    if (end_select == 0 && i == 0) {
-                        // update first page
-                        node->value = val;
-                    } else if (end_select  == 1 && i == PAGESIZE - 1 ) {
-                        // update last page
-                        node->value = val;                        
-                    }
-                    // search will continue to leafs
-                    break; 
-                } else if ( val == node->value ) {
-                    // leaf node-->> target === list element value 
+                
+                if (!node) {
+                    // return immediately, provide the parent list and index to caller 
                     return {prev_node_list, i};
-                }  else if (val < node->value) {
-                    // leaf node-->> target < list element value
-                    return {prev_node_list, i - 1};
+                } else if ( val <= node->value ) {
+                    if (node->ref == nullptr) {
+                        // target found
+                        if (val == node->value)
+                            return {prev_node_list, i + 1};
+                        // target not found but target's leaf locality returned for differing features
+                        if (val < node->value)
+                            return {prev_node_list, i - 1};
+                    } else {
+                        prev_node_list = node_list; 
+                        node_list = node->ref;
+                        i = 0; // reset i
+                        continue;          
+                    }
+                } else {
+                    // nonleaf nodes 
+                    // if (  (node->ref != nullptr)) 
+                    // TODO: if i traverse deeper how do i know which edge to update, overwriting edges is not the correct way!
+                    // if (end_select == 0 && i == 0) {
+                    //     // update first page
+                    //     node->value = val;
+                    // } else if (end_select  == 1 && i == PAGESIZE - 1 ) {
+                    //     // update last page
+                    //     node->value = val;                        
+                    // }
+                    // search will continue to leafs
+                    // break; 
+                    // }
                 }
+            
+            i += 1;
+            if (i == PAGESIZE) {
+                i = 0;
+                prev_node_list = node_list; 
+                // If search fails, search will continue down from last page
+                node_list = node->ref; 
             }
             
-            
-            prev_node_list = node_list; 
-            node_list = (node) ? node->ref : nullptr; // end if page is nulled Note: If list search fails, search will continue down from the tail of list. 
         }
-            // std::cout << "INDE " << val << " " << i << "\t"<<  '\n';
         return {prev_node_list, i } ; 
     }
     
@@ -271,6 +274,10 @@ int main() {
     tree.insert(1);
     tree.insert(-1);
     tree.insert(100);
+    tree.insert(-2);
+    tree.insert(69);
+
+    tree.insert(50);
 
     // bool ret = tree.find(-1);
     // std::cout << ret << "\n";
