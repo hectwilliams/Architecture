@@ -13,20 +13,49 @@
 #include <string>
 #include <array>
 #include <utility>
-
+#include <stack>
 const int PAGESIZE = 5;
 
 template <typename T>
 struct RefNode {
     T value; 
     std::array< RefNode<T>*, 5 >  *ref;
-    int n_active; 
+    int count; 
 };
 
 template <typename T>
 using RefList = std::array< RefNode<T>*, 5 >;
 template <typename T>
 using SearchTuple = std::pair<RefList<T>*, int>;
+
+/**
+ *  Overwritte node value
+ * 
+ * @param node RefNode
+ * @param new_value Integer 
+ */
+template<typename T>
+void wr_node(RefNode<T> *node, T new_value);
+
+/**
+ *  Determines if target page reside in list. If it does, increment the count. 
+ * 
+ * @param page_list RefList
+ * @param index Index of the analysis page  
+ * @param target Target of interest
+ */
+template<typename T>
+bool page_exist(RefList<T> *page_list, T target) ;
+
+/**
+ * Shift page list to the right from index
+ * 
+ * @param list Pointer to list
+ * @param Integer index 
+ */
+template<typename T>
+void shift_list(RefList<T> *list, int index) ;
+
 
 template <typename T>
 class BTree {
@@ -56,32 +85,42 @@ class BTree {
         RefList<T> * child_list;
         int n_active_parent_pg = 0;
         int eff_index;
+        bool target_in_tree;
         
         if(!parent_list) {
             // Parent List not received
             return;
         }
         
+        switch(index) {
+            case -1:
+                eff_index = 0;
+                break;
+            case PAGESIZE:
+                eff_index = 4;
+                break;
+            default:
+                eff_index = index; 
+        }
+        
         // number of active parent pages 
         while((*parent_list)[n_active_parent_pg++]);
         n_active_parent_pg--; 
             
+        target_in_tree = false;
         if(n_active_parent_pg < PAGESIZE){
-            // effective index (parent RefList)
-            switch(index) {
-                case -1:
-                    eff_index = 0;
-                    break;
-                case PAGESIZE:
-                    eff_index = 4;
-                    break;
-                default:
-                    eff_index = index; 
-            }
             
             // save child page which active parent pages reference 
             child_list = (*parent_list)[0]->ref;
             
+            // check if target exists 
+            target_in_tree |= page_exist<T>(parent_list, target);
+            target_in_tree |= page_exist<T>(child_list, target);
+            if (target_in_tree) {
+                // target found in b-tree. Update count attribute and return
+                return;
+            }
+
             // check if target in-between
             if ((*parent_list)[eff_index]) {
                if (target >=  (*parent_list)[eff_index]->value  ) {
@@ -89,26 +128,20 @@ class BTree {
                }
             }
             
-            if ((*parent_list)[eff_index] == nullptr ) {
-               // add childpage and parent page to child and parent list, respectively
-            } else if (eff_index + 1 < PAGESIZE){
-                // shift pages to the right in front of page at eff_index position 
-                for (int i = PAGESIZE-1; i > eff_index ; i--) {
-                    // shift and free page for next write operation 
-                    (*parent_list)[i] =  (*parent_list)[i - 1];
-                    (*child_list)[i] =  (*child_list)[i - 1];
-                }
-            }
-            
+            // shift list ( if needed :) )
+            shift_list(parent_list, eff_index);
+            shift_list(child_list, eff_index);
+
+ 
             // write new page to parent list 
-            RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 0 };
+            RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 1 };
             (*parent_list)[eff_index] = new_parent_page;
             
             // point new parent page to child list 
             new_parent_page->ref =  child_list;
             
             // write child page
-            RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 0 };
+            RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 1 };
             (*child_list)[eff_index] = new_child_page; 
             
             // verify
@@ -116,11 +149,31 @@ class BTree {
             view_list(child_list);
             std::cout << "----checked\n";
 
-                
         } else {
-            std::cout << "NOT READY" << '\n';
+            child_list = (*parent_list)[0]->ref;
+            view_list(parent_list);
+            view_list(child_list);
+            
+            RefNode<T> *parent_node = (*parent_list)[eff_index - 1];
+            RefNode<T> *child_node = (*child_list)[eff_index - 1];
+            
+            bool found = false;
+            found = page_exist<T>(parent_list, target) ;
+            found |= page_exist<T>(child_list, target);
+            if ( found  ) {
+                std::cout << child_node->count ;
+                return;   
+            }
+            
+            if (eff_index == 4) {
+                // page cannot be added to list's end
+                // if (child_node->) {
+                    
+                // }
+            } else if (eff_index == 0) {
+                // page cannot be added to lis'ts front ( upper layers updated)
+            }
         }
-        
     }
     
 public:
@@ -148,29 +201,31 @@ public:
         } else {
             RefList<T> *parent = root;
             RefNode<T> *node = nullptr;
-            int parent_list_null_index = PAGESIZE ;
-            SearchTuple<T> tuple;
+            int n_active_pages = 0 ;
+            SearchTuple<T> tuple = {nullptr, 0};
             RefList<T> list = (*parent);
             
             view_list(parent);
 
             // set farthest null index
-            while(list[--parent_list_null_index]);
+            for (int i = 0 ; i < PAGESIZE; i++)
+                n_active_pages += +( list[i] != nullptr);
             
             // ^edge check 
-            if (val < list[0]->value) {
-                // update first page with new ref window bound
-                if (parent_list_null_index != 4) {
-                    // parents nodes are full
+            if (n_active_pages == PAGESIZE) {
+                if (val < list[0]->value) {
+                    // target < list's first page
+                    tuple = tree_traveral(val, 0);
+                } else if ( val > list[PAGESIZE-1]->value ) {
+                    // target > all pages 
+                    tuple = tree_traveral(val, 1);
                 } else {
+                    // handles other cases (e.g. equal target)
                     tuple = tree_traveral(val, -1);
+                    std::cout << tuple.first << "\n";
                 }
-
-            } else if ( parent_list_null_index !=PAGESIZE-1 && val > list[PAGESIZE-1]->value  ) {
-                // update last page with new ref window bound 
-                tuple = tree_traveral(val, 1);
-            } else {
-                // quiet, value within ref window bound
+            } else if (!tuple.first){
+                // search without modifying parent pages 
                 tuple = tree_traveral(val, -1);
             }
             
@@ -190,7 +245,9 @@ public:
         RefList<T> *node_list = root; /* RefList*/
         RefList<T> *prev_node_list;; /* Parent of previous node*/
         RefNode<T> *node ;
-        int i;
+        int i = 0;
+        bool overwrite_edge;
+        std::stack<RefList<T>*> stack{};
         
         if (!node_list) {
             return {nullptr, i};    
@@ -199,53 +256,58 @@ public:
         prev_node_list= root;
         
         while (node_list /* RefList*/) {
-            
-            // for (i =0; i < PAGESIZE; i++) {
+                
                 node = (*node_list)[i]; // node in current RefList; at least one node exist in RefLists
+                
+                if (!!node ) {
+                    if ( (i == 0 && end_select == 0)  || (i == PAGESIZE-1 && end_select == 1) ) {
+                        overwrite_edge = true;
+                    } else {
+                        overwrite_edge= false;
+                    }
+                }
                 
                 if (!node) {
                     // return immediately, provide the parent list and index to caller 
                     return {prev_node_list, i};
                 } else if ( val <= node->value ) {
                     if (node->ref == nullptr) {
-                        // target found
-                        if (val == node->value)
+                        // leaf 
+                        if (val == node->value) {
+                            // target found
                             return {prev_node_list, i + 1};
-                        // target not found but target's leaf locality returned for differing features
-                        if (val < node->value)
+                        }
+                        if (val < node->value) {
+                            // target not found but target's leaf locality returned for differing features
                             return {prev_node_list, i - 1};
+                        }
                     } else {
+                        // non-leaf
                         prev_node_list = node_list; 
                         node_list = node->ref;
                         i = 0; // reset i
                         continue;          
                     }
-                } else {
-                    // nonleaf nodes 
-                    // if (  (node->ref != nullptr)) 
-                    // TODO: if i traverse deeper how do i know which edge to update, overwriting edges is not the correct way!
-                    // if (end_select == 0 && i == 0) {
-                    //     // update first page
-                    //     node->value = val;
-                    // } else if (end_select  == 1 && i == PAGESIZE - 1 ) {
-                    //     // update last page
-                    //     node->value = val;                        
-                    // }
-                    // search will continue to leafs
-                    // break; 
-                    // }
                 }
-            
+                
+                if (overwrite_edge && node->ref){
+                    // update either end of page ( supports insert method)
+                    wr_node(node, val);
+                }
+                
             i += 1;
             if (i == PAGESIZE) {
                 i = 0;
+                stack.push(node_list);
                 prev_node_list = node_list; 
                 // If search fails, search will continue down from last page
                 node_list = node->ref; 
             }
             
         }
-        return {prev_node_list, i } ; 
+        
+        stack.pop(); // pop off lowest RefList
+        return { stack.top(), PAGESIZE } ; 
     }
     
     /* Call find_ and return boolean of search*/
@@ -263,6 +325,37 @@ public:
     }
 };
 
+template<typename T>
+void shift_list(RefList<T> *list, int index) {
+    if ((*list)[index] == nullptr ) {
+       // add childpage and parent page to child and parent list, respectively
+    } else if (index + 1 < PAGESIZE){
+        // shift pages to the right in front of page at eff_index position 
+        for (int i = PAGESIZE-1; i > index ; i--) {
+            // shift and free page for next write operation 
+            (*list)[i] =  (*list)[i - 1];
+        }
+    }
+}
+
+template<typename T>
+void wr_node(RefNode<T> *node, T new_value) {
+    node->value = new_value;
+}
+
+template<typename T>
+bool page_exist( RefList<T> *page_list, T target) {
+    bool found = false;
+    for(int i = 0; i < PAGESIZE && (*page_list)[i] != nullptr ; i++) {
+        if ( (*page_list)[i]->value == target) {
+            (*page_list)[i]->count++;
+            return true; 
+        }
+    }
+    return false; 
+}
+
+
 int main() {
     std::vector<int> data;
     
@@ -276,8 +369,7 @@ int main() {
     tree.insert(100);
     tree.insert(-2);
     tree.insert(69);
-
-    tree.insert(50);
+    tree.insert(1);
 
     // bool ret = tree.find(-1);
     // std::cout << ret << "\n";
