@@ -13,172 +13,196 @@
 #include <string>
 #include <array>
 #include <utility>
-#include <stack>
+#include <deque>
 const int PAGESIZE = 5;
 
 template <typename T>
 struct RefNode {
     T value; 
-    std::array< RefNode<T>*, 5 >  *ref;
-    int count; 
+    // std::array< RefNode<T>*, 5 >  *ref;
+    int count;  //  number of referenced nodes . 
+    RefNode<T> *down;
+    RefNode<T> *up;
+    RefNode<T> *next;
+    RefNode<T> *back;
+    int depth;
+    int index; 
 };
 
-template <typename T>
-using RefList = std::array< RefNode<T>*, 5 >;
-template <typename T>
-using SearchTuple = std::pair<RefList<T>*, int>;
 
 /**
- *  Overwritte node value
+ * Count number of active page in list 
  * 
- * @param node RefNode
- * @param new_value Integer 
+ * @param node Pointer to node in list
  */
 template<typename T>
-void wr_node(RefNode<T> *node, T new_value);
+int list_size(RefNode<T> *node);
 
 /**
- *  Determines if target page reside in list. If it does, increment the count. 
+ * Handle creation of reference node at the front page
  * 
- * @param page_list RefList
- * @param index Index of the analysis page  
- * @param target Target of interest
+ * @param node Pointer to head page
+ * @param target Catalyst for new reference generation 
  */
 template<typename T>
-bool page_exist(RefList<T> *page_list, T target) ;
+void hanlde_ref_front(RefNode<T> *node, T target);
+
 
 /**
- * Shift page list to the right from index
+ * Handle creation of reference node at the last page
  * 
- * @param list Pointer to list
- * @param Integer index 
+ * @param node Pointer to last page
+ * @param target Catalyst for new reference generation 
  */
 template<typename T>
-void shift_list(RefList<T> *list, int index) ;
+void hanlde_ref_this(RefNode<T> *node, T target);
 
 
+/**
+ * Handle creation of reference node inside bounds
+ * 
+ * @param node Pointer to non edge page
+ * @param target Catalyst for new reference generation 
+ */
+template<typename T>
+void hanlde_ref_between(RefNode<T> *node, T target);
+
+
+/**
+ * Moves to front of page and sets indicies in list
+ * 
+ * @param node Pointer to last page
+ */
+template<typename T>
+void set_indices(RefNode<T> *node);
+
+/**
+ * Get head of list
+ * 
+ * @param node Pointer to page 
+ */
+template<typename T>
+RefNode<T> * get_head(RefNode<T> * node) ;
+
+// /**
+//  *  Travels up tree updating reference node count 
+//  * 
+//  * @param node Pointer to page
+//  * @param target Pointer to page
+//  */
+// template <typename T> 
+// void update_ref_count(RefNode<T> * node, RefNode<T> * target);
+
+/**
+ * Find target page in list
+ * 
+ * @param page Pointer to page 
+ * @param target_page Pointer to target
+ */
+template<typename T>
+bool page_in_list(RefNode<T> *page, RefNode<T> *target_page);
+    
 template <typename T>
 class BTree {
     
-    RefList<T> *root;
+    RefNode<T> *root;
     
     /**
      * View pages in RefList
      *
      * @param list Pointer to RefList  
      */
-    void view_list(RefList<T> *list) {
-        for (int i = 0; i < PAGESIZE &&  (*list)[i] !=nullptr ; i++) {
-            std::cout << "[" << (*list)[i]->value << "]";
+    void view_list(RefNode<T> *node) {
+        while (node) {
+            std::cout << "[" << (node->value) << "]" << "{" << (node->count) <<"}" << " Index " << node->index <<"\t\t";
+            node = node->next;
         }
         std::cout << '\n';
     }
-    /**
-     * Update leaf RefLists 
-     *  
-     * @param parent_list Parent RefList 
-     * @param index Location of node in RefList 
-     * @param target Value to add to leaf layer in tree 
-     */
-    void leaf_update(RefList<T> *parent_list, int index, T target) {
-        RefList<T> * node_list;
-        RefList<T> * child_list;
-        int n_active_parent_pg = 0;
-        int eff_index;
-        bool target_in_tree;
-        
-        if(!parent_list) {
-            // Parent List not received
-            return;
-        }
-        
-        switch(index) {
-            case -1:
-                eff_index = 0;
-                break;
-            case PAGESIZE:
-                eff_index = 4;
-                break;
-            default:
-                eff_index = index; 
-        }
-        
-        // number of active parent pages 
-        while((*parent_list)[n_active_parent_pg++]);
-        n_active_parent_pg--; 
-            
-        target_in_tree = false;
-        if(n_active_parent_pg < PAGESIZE){
-            
-            // save child page which active parent pages reference 
-            child_list = (*parent_list)[0]->ref;
-            
-            // check if target exists 
-            target_in_tree |= page_exist<T>(parent_list, target);
-            target_in_tree |= page_exist<T>(child_list, target);
-            if (target_in_tree) {
-                // target found in b-tree. Update count attribute and return
-                return;
-            }
 
-            // check if target in-between
-            if ((*parent_list)[eff_index]) {
-               if (target >=  (*parent_list)[eff_index]->value  ) {
-                   eff_index += 1;
-               }
-            }
-            
-            // shift list ( if needed :) )
-            shift_list(parent_list, eff_index);
-            shift_list(child_list, eff_index);
 
+/**
+ *  Travels up tree updating reference node count 
+ * 
+ * @param node Pointer to page
+ * @param target Pointer to page
+ */
  
-            // write new page to parent list 
-            RefNode<T> *new_parent_page = new RefNode<T>{target, nullptr, 1 };
-            (*parent_list)[eff_index] = new_parent_page;
-            
-            // point new parent page to child list 
-            new_parent_page->ref =  child_list;
-            
-            // write child page
-            RefNode<T> *new_child_page = new RefNode<T>{target, nullptr, 1 };
-            (*child_list)[eff_index] = new_child_page; 
-            
-            // verify
-            view_list(parent_list);
-            view_list(child_list);
-            std::cout << "----checked\n";
-
-        } else {
-            child_list = (*parent_list)[0]->ref;
-            view_list(parent_list);
-            view_list(child_list);
-            
-            RefNode<T> *parent_node = (*parent_list)[eff_index - 1];
-            RefNode<T> *child_node = (*child_list)[eff_index - 1];
-            
-            bool found = false;
-            found = page_exist<T>(parent_list, target) ;
-            found |= page_exist<T>(child_list, target);
-            if ( found  ) {
-                std::cout << child_node->count ;
-                return;   
-            }
-            
-            if (eff_index == 4) {
-                // page cannot be added to list's end
-                // if (child_node->) {
-                    
-                // }
-            } else if (eff_index == 0) {
-                // page cannot be added to lis'ts front ( upper layers updated)
-            }
-        }
-    }
+void update_ref_count(RefNode<T> *node) {
     
-public:
+    int count = 0;
+    
+    // std::cout << "WHERE AM I\t" << node->value;
+    
+    
+    // while (!page_in_list(node, target)) {
+        
+    //     // move to last page
+    //     while(node->next)
+    //         node = node->next; 
+        
+    //     // move to ref
+    //     while (node) {
+    //         count += +(node->down == nullptr);
+    //         if (node->up) {
+    //             node = node->up;
+    //             node->count = count; 
+    //             break;
+    //         } else {
+    //             node = node->back;
+    //         }
+    //     }
+        
+    // }
+}
 
+
+
+public:
+  
     BTree() {root = nullptr;}
+    
+      /**
+     * Print all lists
+     * 
+     */
+    void view_all(void) {
+        
+        std::deque< RefNode<T>*> q;
+        
+        q.push_back(root);
+        
+        RefNode<T>* page;
+        
+        while (  !q.empty()  ) {
+            
+            page =  q.front();
+            
+            q.pop_front();
+            
+            std::cout << "-------------------" << "\n";
+            if (page->index == 0) {
+                std::cout << "DEPTH:* " << page->depth<<"\nLIST: "<< "\n";
+                // view_list(page);
+                std::cout << "\n";
+            }
+            
+            // search linked list, add references found in queue
+            while (page) {
+                std::cout <<"IDX:" << page->index << "\t" << "[" << page->value << "]" << " < " << page->index << "  <" << page->count <<  ">\n" ;
+                if (page->down) {
+                    std::cout << " -REF "  << "\n";
+                    q.push_back(page->down);
+                } else {
+                    std::cout << std::endl;
+                }
+                page = page->next; 
+            }
+            
+        }
+        
+    }
+
     
     /** 
     * Search/traverse b-tree. 
@@ -187,50 +211,130 @@ public:
     * 
     */
     void insert(T val) {
+        
         if (!root) {
             // first insert , create root node 
-            root = new RefList<T>{};
-            (*root)[0] = new RefNode<T>{ val, nullptr, 1}; // parent list's node
-            (*root)[0]->ref = new RefList<T>{}; // parent node connection to child list
-            (*((*root)[0]->ref ))[0]  = new RefNode<T>{val, nullptr, 1};// child node 
-            for( int i = 1 ; i < PAGESIZE; i++){
-                // null unused nodes in both parent and child 
-                (*root)[i] = nullptr; // other parent list nodes
-                (*((*root)[0]->ref ))[i]  = nullptr; // other child list nodes 
-            }
+            root = new RefNode<T>{ val, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , 0, 0}; // parent list's node
+            
         } else {
-            RefList<T> *parent = root;
-            RefNode<T> *node = nullptr;
-            int n_active_pages = 0 ;
-            SearchTuple<T> tuple = {nullptr, 0};
-            RefList<T> list = (*parent);
             
-            view_list(parent);
+            RefNode<T> *ret_node;
+            
+            ret_node = tree_traveral(val);
+            
+            if (ret_node->value == val) {
+                
+                ret_node->count++;
+                
+            } else if(val < ret_node->value) {
+                RefNode<T> * head = get_head(ret_node);
+                int n_pages = list_size(head);
+                
+                // view_list(get_head(ret_node));
 
-            // set farthest null index
-            for (int i = 0 ; i < PAGESIZE; i++)
-                n_active_pages += +( list[i] != nullptr);
-            
-            // ^edge check 
-            if (n_active_pages == PAGESIZE) {
-                if (val < list[0]->value) {
-                    // target < list's first page
-                    tuple = tree_traveral(val, 0);
-                } else if ( val > list[PAGESIZE-1]->value ) {
-                    // target > all pages 
-                    tuple = tree_traveral(val, 1);
+                if (n_pages == PAGESIZE) {
+                        // full 
+                    if (ret_node->index == 0) {
+                        // ref case (head)
+                        hanlde_ref_front(ret_node, val); // after expression is complete, ret_node->back represents new ref
+                        
+                        // ret_node->back->value;
+                        
+                        set_indices(ret_node);
+                        
+                        update_ref_count(ret_node->back);
+
+                    } else {
+                
+                        // ref drill down ( ref between)
+                        hanlde_ref_this(ret_node->back, val); // notice the back (node->back is drilled down)
+                        
+                        set_indices(ret_node);
+
+                        update_ref_count(ret_node->back);
+                        
+                        //debug 
+                        // view_list(get_head(ret_node));
+                    }
+                    
                 } else {
-                    // handles other cases (e.g. equal target)
-                    tuple = tree_traveral(val, -1);
-                    std::cout << tuple.first << "\n";
+                    
+                    // std::cout << val <<  "---" << ret_node->index << "\t" << "\t"<< ret_node->value<< "\t"<<  n_pages<<  "\n";
+                    // not full, inject 
+                    RefNode<T> *ret_node_back = ret_node->back;
+                    RefNode<T> *new_page = new RefNode<T>{ val, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , ret_node->depth, ret_node->index}; 
+                    // ret_node->index += 1;
+                    new_page->next = ret_node;
+                    ret_node->back = new_page;
+                    new_page->back = ret_node_back; 
+                    
+                    if(ret_node_back) {
+                        ret_node_back->next = new_page;
+                        new_page->back = ret_node_back;
+                    }
+                    
+                    if(ret_node == root) { root = new_page;}
+                    
+                    if (new_page->depth > 0 && ret_node->index == 0 ) {
+                        // ret_node points to ref
+                        
+                        // update the value of the ref node
+                        ret_node->up->value = val;
+                        
+                        // store ref node 
+                        RefNode<T> *ref = ret_node->up;
+                        
+                        // detach ref node from ret_node 
+                        ret_node->up->down = nullptr;
+                        ret_node->up = nullptr;
+                        
+                        // attach new front to ref
+                        new_page ->up = ref;
+                        ref->down = new_page;
+                    
+                    }
+             
+                    set_indices(new_page);
+                    
+                    
+                    
+                    // ref may be located to the left of new page
+                    
+                    RefNode<T> * possible_ref = get_head(ret_node);
+                    
+                    update_ref_count(possible_ref);
+                    
+      
+        
                 }
-            } else if (!tuple.first){
-                // search without modifying parent pages 
-                tuple = tree_traveral(val, -1);
+                
+            } else if (val > ret_node->value) {
+                
+                if (ret_node->index == PAGESIZE - 1) {
+                    
+                    // ref case (tail)
+                    hanlde_ref_this(ret_node, val); // ret_node is ref
+                    
+                    RefNode<T> * possible_ref = get_head(ret_node);
+                    // view_list(head);
+
+                } else {
+                    
+                    // extend list in forward 
+                    RefNode<T> *new_page = new RefNode<T>{ val, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , ret_node->depth, ret_node->index + 1};
+                    ret_node->next = new_page;
+                    new_page->back = ret_node; 
+                    
+                    // ref may be located to the left of new page
+
+                    RefNode<T> * possible_ref = get_head(new_page);
+                    
+                    update_ref_count(possible_ref);
+
+                    // view_list(head);
+                    set_indices(get_head(ret_node));
+                }
             }
-            
-            // use information returned from tree_traversal to update leaf nodes 
-            leaf_update(tuple.first, tuple.second, val);
             
         }
     }
@@ -239,122 +343,146 @@ public:
     * Search/traverse b-tree. 
     * 
     * @param val Target of search.
-    * @param end_select  Select end to modify (-1 (not change) 0 (left edge) 1(right edge)).
+    * @param end_select  Select end to modify ( -1 (not change) 0 (left edge) 1(right edge) ).
     */
-    SearchTuple<T> tree_traveral(T val, T end_select = -1) {
-        RefList<T> *node_list = root; /* RefList*/
-        RefList<T> *prev_node_list;; /* Parent of previous node*/
+    RefNode<T> *tree_traveral(T target) {
         RefNode<T> *node ;
-        int i = 0;
-        bool overwrite_edge;
-        std::stack<RefList<T>*> stack{};
+        RefNode<T> *prev ;
         
-        if (!node_list) {
-            return {nullptr, i};    
-        }
-    
-        prev_node_list= root;
+        if (!root) 
+            return nullptr;
         
-        while (node_list /* RefList*/) {
-                
-                node = (*node_list)[i]; // node in current RefList; at least one node exist in RefLists
-                
-                if (!!node ) {
-                    if ( (i == 0 && end_select == 0)  || (i == PAGESIZE-1 && end_select == 1) ) {
-                        overwrite_edge = true;
-                    } else {
-                        overwrite_edge= false;
-                    }
-                }
-                
-                if (!node) {
-                    // return immediately, provide the parent list and index to caller 
-                    return {prev_node_list, i};
-                } else if ( val <= node->value ) {
-                    if (node->ref == nullptr) {
-                        // leaf 
-                        if (val == node->value) {
-                            // target found
-                            return {prev_node_list, i + 1};
-                        }
-                        if (val < node->value) {
-                            // target not found but target's leaf locality returned for differing features
-                            return {prev_node_list, i - 1};
-                        }
-                    } else {
-                        // non-leaf
-                        prev_node_list = node_list; 
-                        node_list = node->ref;
-                        i = 0; // reset i
-                        continue;          
-                    }
-                }
-                
-                if (overwrite_edge && node->ref){
-                    // update either end of page ( supports insert method)
-                    wr_node(node, val);
-                }
-                
-            i += 1;
-            if (i == PAGESIZE) {
-                i = 0;
-                stack.push(node_list);
-                prev_node_list = node_list; 
-                // If search fails, search will continue down from last page
-                node_list = node->ref; 
-            }
+        node = root;
+        
+        while(node) {
             
+            if (target == node->value) {
+                if (!node->down) {
+                    return node;
+                }
+                node = node->down;
+                continue;
+            } else if(target < node->value) {
+                if (!node->down) 
+                    return node;
+                node = node->down;
+                continue;
+            } else {
+                if (node->next) {
+                    if ((node->value < target && target < node->next->value)  && node->down) {
+                        // between case 
+                        node = node->down;
+                        continue;
+                    } 
+                } else {
+                    if (node->value <= target && node->down) {
+                        node = node->down;
+                        continue;
+                    }
+                }
+            }
+            prev = node; 
+            node = node->next; 
         }
-        
-        stack.pop(); // pop off lowest RefList
-        return { stack.top(), PAGESIZE } ; 
+       
+        return prev;
     }
     
-    /* Call find_ and return boolean of search*/
-    /** 
-    * Notify caller if value was find. 
-    *  
-    * @param val Target of search.
-    */
-    bool find(T val) { 
-        SearchTuple<T> ret = this->tree_traveral(val);
-        if(ret.second == -1 || ret.second == PAGESIZE) {
-            return false; 
-        }
-        return true;
-    }
 };
 
 template<typename T>
-void shift_list(RefList<T> *list, int index) {
-    if ((*list)[index] == nullptr ) {
-       // add childpage and parent page to child and parent list, respectively
-    } else if (index + 1 < PAGESIZE){
-        // shift pages to the right in front of page at eff_index position 
-        for (int i = PAGESIZE-1; i > index ; i--) {
-            // shift and free page for next write operation 
-            (*list)[i] =  (*list)[i - 1];
-        }
+void hanlde_ref_front(RefNode<T> *curr_page, T target) {
+    
+    // new curr_page layer
+    RefNode<T> *new_head_page = new RefNode<T>{ target, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , curr_page->depth + 1, 0 };
+    
+    // copy 'analysis' page and append to new head page
+    RefNode<T> *copy_page = new RefNode<T>{ curr_page->value, curr_page->count, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , curr_page->depth + 1, 1 };
+    
+    // forward connect new_head_page to copy_page
+    new_head_page->next  = copy_page;
+    
+    //reverse connect copy_page to new_head_page
+    copy_page->back = new_head_page;
+    
+    // update curr page value to lowest bound 
+    if (curr_page->index == 0) {
+        curr_page->value = target;
+    }
+    
+    // update size of reference in curr_page 
+    curr_page->count = new_head_page->count + copy_page->count; 
+    
+    // point new head page to ref page
+    new_head_page->up = curr_page;
+    
+    // point ref down to new head
+    curr_page->down = new_head_page;
+}
+
+template<typename T>
+void hanlde_ref_this(RefNode<T> *curr_page, T target) {
+    
+    // copy node which is new front for new list 
+    RefNode<T> *copy_page = new RefNode<T>{ curr_page->value, curr_page->count, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , curr_page->depth + 1, 0 };
+    
+    // point new head to value
+    RefNode<T> * new_page = new RefNode<T>{ target, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , curr_page->depth + 1, 1 };
+    
+    // forward connect copy page to new page
+    copy_page->next = new_page;
+    
+    // reverse connect copy page to new page
+    new_page->back = copy_page;
+    
+    // point copy page (aka head) to ref
+    copy_page->up = curr_page;
+    
+    // point ref down to copy page
+    curr_page->down = copy_page;
+    
+    // update size of ref node 
+    curr_page->count = new_page->count + curr_page->count;
+    
+}
+
+template<typename T>
+bool page_in_list(RefNode<T> *page, RefNode<T> *target_page) {
+    // move to index 0 
+    while(page->back) 
+        page = page->back;
+        // is this root
+    return (page == target_page); 
+}
+
+template<typename T>
+RefNode<T> * get_head(RefNode<T> * node) {
+    while(node->back)
+        node = node->back;
+    return node;
+}
+
+template<typename T>
+void set_indices(RefNode<T> *node) {
+    RefNode<T> *head = node;
+    int n = 0;
+    while(head->back)
+        head = head->back;
+    while(head) {
+        head->index = n++;
+        head = head->next;
     }
 }
 
 template<typename T>
-void wr_node(RefNode<T> *node, T new_value) {
-    node->value = new_value;
-}
-
-template<typename T>
-bool page_exist( RefList<T> *page_list, T target) {
-    bool found = false;
-    for(int i = 0; i < PAGESIZE && (*page_list)[i] != nullptr ; i++) {
-        if ( (*page_list)[i]->value == target) {
-            (*page_list)[i]->count++;
-            return true; 
-        }
+int list_size(RefNode<T> *node) {
+    int c = 0;
+    while(node) {
+        node= node->next;
+        c++;
     }
-    return false; 
+    return c; 
 }
-
 
 int main() {
     std::vector<int> data;
@@ -364,13 +492,39 @@ int main() {
     }
     
     BTree<int> tree;
-    tree.insert(1);
+    tree.insert(4);
+    tree.insert(-1);
     tree.insert(-1);
     tree.insert(100);
-    tree.insert(-2);
+    tree.insert(2);
+    tree.insert(555);
     tree.insert(69);
-    tree.insert(1);
+    tree.insert(69);
+    tree.insert(69);
+    tree.insert(73);
+    tree.insert(88);
+    tree.insert(92);
+    tree.insert(97);
+    tree.insert(97);
+    tree.insert(97);
+    tree.insert(-100);
+    tree.insert(1000);
+    tree.insert(1000);
+    tree.insert(1222);
+    tree.insert(13433);
+    tree.insert(3424553);
+    tree.insert(3424555);
+    tree.insert(-200);
 
+    tree.view_all();
+
+    // // tree.insert(1);
+    // tree.insert(-333);
+    // tree.insert(333);
+    // tree.insert(-100);
+    // tree.insert(-100);
+    // tree.insert(-90);
+    
     // bool ret = tree.find(-1);
     // std::cout << ret << "\n";
     
