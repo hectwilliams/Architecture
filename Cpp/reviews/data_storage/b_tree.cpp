@@ -14,12 +14,12 @@
 #include <array>
 #include <utility>
 #include <deque>
+
 const int PAGESIZE = 5;
 
 template <typename T>
 struct RefNode {
     T value; 
-    // std::array< RefNode<T>*, 5 >  *ref;
     int count;  //  number of referenced nodes . 
     RefNode<T> *down;
     RefNode<T> *up;
@@ -28,7 +28,6 @@ struct RefNode {
     int depth;
     int index; 
 };
-
 
 /**
  * Count number of active page in list 
@@ -46,7 +45,6 @@ int list_size(RefNode<T> *node);
  */
 template<typename T>
 void hanlde_ref_front(RefNode<T> *node, T target);
-
 
 /**
  * Handle creation of reference node at the last page
@@ -119,8 +117,7 @@ class BTree {
         }
         std::cout << '\n';
     }
-
-
+    
 /**
  *  Travels up tree updating reference node count 
  * 
@@ -130,30 +127,62 @@ class BTree {
  
 void update_ref_count(RefNode<T> *node) {
     
+    RefNode<T> *page;
+    RefNode<T> *prev_page;
+    
+    page = node;
+    prev_page = node;
+    
     int count = 0;
+    int check = 0;
+    int root_node = 0;
     
-    // std::cout << "WHERE AM I\t" << node->value;
-    
-    
-    // while (!page_in_list(node, target)) {
+    // move down 
+    while (1) {
         
-    //     // move to last page
-    //     while(node->next)
-    //         node = node->next; 
+        check += 1;
         
-    //     // move to ref
-    //     while (node) {
-    //         count += +(node->down == nullptr);
-    //         if (node->up) {
-    //             node = node->up;
-    //             node->count = count; 
-    //             break;
-    //         } else {
-    //             node = node->back;
-    //         }
-    //     }
+        // move to last page 
+        while (page->next){ page = page->next;} 
         
-    // }
+        // move to first page 
+        while(page) {
+            
+            count += page->count; 
+ 
+            prev_page = page;
+            
+            page = page->back;
+            
+        }
+
+        // head of list 
+        page = prev_page;
+        
+        // can we travel upward 
+        if (page->up) {
+            
+            // update ref node count 
+            page->up->count = count;
+            
+            // reset counter 
+            count = 0;
+            
+            // more to ancestor list 
+            page = page->up;
+
+        }  else {
+            break;
+        }
+
+                    
+        if (check == 50) {
+            std::cout << "ALERT" << "\n" ;
+            break;   
+        }
+        
+    }
+
 }
 
 
@@ -189,9 +218,9 @@ public:
             
             // search linked list, add references found in queue
             while (page) {
-                std::cout <<"IDX:" << page->index << "\t" << "[" << page->value << "]" << " < " << page->index << "  <" << page->count <<  ">\n" ;
+                std::cout <<"IDX:" << page->index << "\t" << "[" << page->value << "]" << " < " << page->index << "  <" << page->count <<  ">";
                 if (page->down) {
-                    std::cout << " -REF "  << "\n";
+                    std::cout << " REF "  << "\n";
                     q.push_back(page->down);
                 } else {
                     std::cout << std::endl;
@@ -225,24 +254,23 @@ public:
             if (ret_node->value == val) {
                 
                 ret_node->count++;
+                update_ref_count(ret_node);
                 
             } else if(val < ret_node->value) {
+                
                 RefNode<T> * head = get_head(ret_node);
                 int n_pages = list_size(head);
                 
-                // view_list(get_head(ret_node));
-
                 if (n_pages == PAGESIZE) {
+                    
                         // full 
                     if (ret_node->index == 0) {
                         // ref case (head)
-                        hanlde_ref_front(ret_node, val); // after expression is complete, ret_node->back represents new ref
-                        
-                        // ret_node->back->value;
+                        hanlde_ref_front(ret_node, val); // after expression is complete, ret_node is drilled down
                         
                         set_indices(ret_node);
                         
-                        update_ref_count(ret_node->back);
+                        update_ref_count(ret_node->down); // moves to referenced list
 
                     } else {
                 
@@ -251,19 +279,16 @@ public:
                         
                         set_indices(ret_node);
 
-                        update_ref_count(ret_node->back);
+                        update_ref_count(ret_node->back->down); // moves to referenced list
                         
-                        //debug 
-                        // view_list(get_head(ret_node));
                     }
                     
                 } else {
                     
-                    // std::cout << val <<  "---" << ret_node->index << "\t" << "\t"<< ret_node->value<< "\t"<<  n_pages<<  "\n";
-                    // not full, inject 
+                    // not full, inject between or before pages
                     RefNode<T> *ret_node_back = ret_node->back;
                     RefNode<T> *new_page = new RefNode<T>{ val, 1, nullptr /*down*/, nullptr/*up*/,nullptr/*next*/, nullptr/*back*/ , ret_node->depth, ret_node->index}; 
-                    // ret_node->index += 1;
+                    
                     new_page->next = ret_node;
                     ret_node->back = new_page;
                     new_page->back = ret_node_back; 
@@ -295,16 +320,12 @@ public:
                     }
              
                     set_indices(new_page);
-                    
-                    
-                    
+                
                     // ref may be located to the left of new page
                     
                     RefNode<T> * possible_ref = get_head(ret_node);
                     
-                    update_ref_count(possible_ref);
-                    
-      
+                    update_ref_count(possible_ref); // may be a referenced list
         
                 }
                 
@@ -317,6 +338,7 @@ public:
                     
                     RefNode<T> * possible_ref = get_head(ret_node);
                     // view_list(head);
+                    update_ref_count(possible_ref);
 
                 } else {
                     
@@ -325,14 +347,12 @@ public:
                     ret_node->next = new_page;
                     new_page->back = ret_node; 
                     
-                    // ref may be located to the left of new page
-
                     RefNode<T> * possible_ref = get_head(new_page);
+                    
+                    set_indices(get_head(ret_node));
                     
                     update_ref_count(possible_ref);
 
-                    // view_list(head);
-                    set_indices(get_head(ret_node));
                 }
             }
             
@@ -500,40 +520,25 @@ int main() {
     tree.insert(555);
     tree.insert(69);
     tree.insert(69);
-    tree.insert(69);
+    tree.insert(69); // 9
     tree.insert(73);
     tree.insert(88);
     tree.insert(92);
+    tree.insert(97); //13
     tree.insert(97);
-    tree.insert(97);
-    tree.insert(97);
+    tree.insert(97); //15
     tree.insert(-100);
     tree.insert(1000);
     tree.insert(1000);
     tree.insert(1222);
-    tree.insert(13433);
+    tree.insert(13433); // 20
     tree.insert(3424553);
     tree.insert(3424555);
     tree.insert(-200);
 
     tree.view_all();
 
-    // // tree.insert(1);
-    // tree.insert(-333);
-    // tree.insert(333);
-    // tree.insert(-100);
-    // tree.insert(-100);
-    // tree.insert(-90);
-    
-    // bool ret = tree.find(-1);
-    // std::cout << ret << "\n";
-    
     return 0;
   
 }
          
-
-
-
-
-
