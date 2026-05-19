@@ -92,6 +92,14 @@ RefNode<T> * get_head(RefNode<T> * node) ;
 // void update_ref_count(RefNode<T> * node, RefNode<T> * target);
 
 /**
+ * Decrement depth of page(and its list of friends) and its descendants
+ * 
+ * @param page Pointer to page of interest 
+ */
+template<typename T>
+void decrement_depth(RefNode<T> *page);
+    
+/**
  * Find target page in list
  * 
  * @param page Pointer to page 
@@ -159,6 +167,9 @@ void update_ref_count(RefNode<T> *node) {
         // head of list 
         page = prev_page;
         
+        set_indices(get_head(page)); // set indices are we progress up chain
+
+        
         // can we travel upward 
         if (page->up) {
             
@@ -199,6 +210,9 @@ public:
         
         std::deque< RefNode<T>*> q;
         
+        if (!root)
+            return;
+            
         q.push_back(root);
         
         RefNode<T>* page;
@@ -218,7 +232,7 @@ public:
             
             // search linked list, add references found in queue
             while (page) {
-                std::cout <<"IDX:" << page->index << "\t" << "[" << page->value << "]" << " < " << page->index << "  <" << page->count <<  ">";
+                std::cout <<"IDX:" << page->index << "\t" << "VALUE " << "[" << page->value << "]" << "  COUNT: " << "<"<<  page->count <<  ">";
                 if (page->down) {
                     std::cout << " REF "  << "\n";
                     q.push_back(page->down);
@@ -227,9 +241,7 @@ public:
                 }
                 page = page->next; 
             }
-            
         }
-        
     }
 
     
@@ -359,6 +371,105 @@ public:
         }
     }
     
+    /**
+     * Delete page from tree 
+     * 
+     * @param target Target of search
+     * 
+     */
+     void  del(T target) {
+         
+         RefNode<T> *ret_node = tree_traveral(target);
+         RefNode<T> *target_page = ret_node;
+         RefNode<T> *deepest_node;
+         int n_pages_child_list;
+         int deleted_node = 0;
+         
+         if (!ret_node) {
+             // nothing 
+             return; 
+         } else if (ret_node->value == target ) {
+             RefNode<T> *page = ret_node;
+             deepest_node = nullptr;
+
+             while (1) {
+                page->count -= (deleted_node); // decrement as we move up chain 
+                if (page->up) {
+                     // move up 
+                     page = page->up;
+                     // evaluate
+                     if (page->down->next) {
+                        // more than one node beloww
+                        if (!deepest_node){
+                            // save page in lowest layer of chain for updating count and indices along this analysis chain 
+                            deepest_node = page->down->next;
+                        }
+                        // save new child page
+                        RefNode<T> *promote_child = page->down->next;
+                        // copy data to current page
+                        page->value = promote_child->value;
+                        if (page->down == target_page ) {
+                            // delet old child
+                            delete page->down;
+                            // connect current page new child
+                            page->down = promote_child;
+                            promote_child->up = page;
+                            deleted_node = 1;
+                        } 
+                     } else {
+                        // single node 
+                        // disconnect parent from child 
+                        // delete child 
+                        if (page->down == target_page ) {
+                            delete page->down ; 
+                            deleted_node = 1;
+                        }
+                        page->down = nullptr;
+                     }
+                 } else {
+                     // no ancestors; reached this section in code after moving upward in tree 
+                     
+                     if (page == target_page || page->count == 0) {
+
+                         if ( page->next && page->back ) {
+                             // page forward and page reverse adjacent
+                             RefNode<T> *back_page = page->back;
+                             RefNode<T> *next_page = page->next;
+                             back_page->next = next_page;
+                             next_page->back = back_page;
+                             set_indices(get_head(back_page));
+                             update_ref_count(back_page);
+                             delete page;
+                         } else if ( page->back && ! page->next ) {
+                            RefNode<T> *replacement_page = page->back;
+                            replacement_page->next = nullptr;
+                            set_indices(get_head(replacement_page));
+                            update_ref_count(replacement_page);
+                            delete page; 
+                         } else if( page->next && !page->back ) {
+                            root = page->next;
+                            set_indices(get_head(root));
+                            update_ref_count(root);
+                            delete page;
+                         } else if ( !page->back  && !page->next ) {
+                            delete page;
+                            root = nullptr;
+                         }
+                         
+                         
+                     }
+                     
+                     break;
+                 }
+                 
+             }
+             
+             if (deepest_node) {
+                update_ref_count(deepest_node);
+             }
+         } 
+     }
+    
     /** 
     * Search/traverse b-tree. 
     * 
@@ -467,6 +578,33 @@ void hanlde_ref_this(RefNode<T> *curr_page, T target) {
 }
 
 template<typename T>
+void decrement_depth(RefNode<T> *page) {
+    RefNode<T> *some_page;
+    std::deque< RefNode<T>*> q;
+    
+    q.push_back(page); // init queue 
+    
+    while (  !q.empty()  ) {
+        
+        page = q.front();
+        
+        q.pop_front();
+        
+        page = get_head(page);
+        
+        while(page) {
+            // descendants exist 
+            if (page->down) 
+                q.push_back(page->down);
+            // decrement depth
+            page->depth--;
+            // move to right 
+            page = page->next;
+        }
+    }
+}
+
+template<typename T>
 bool page_in_list(RefNode<T> *page, RefNode<T> *target_page) {
     // move to index 0 
     while(page->back) 
@@ -513,28 +651,56 @@ int main() {
     
     BTree<int> tree;
     tree.insert(4);
-    tree.insert(-1);
-    tree.insert(-1);
-    tree.insert(100);
+    tree.insert(7);
+    tree.insert(14);
+    tree.insert(22);
+    tree.insert(25);
     tree.insert(2);
-    tree.insert(555);
-    tree.insert(69);
-    tree.insert(69);
-    tree.insert(69); // 9
-    tree.insert(73);
-    tree.insert(88);
-    tree.insert(92);
-    tree.insert(97); //13
-    tree.insert(97);
-    tree.insert(97); //15
-    tree.insert(-100);
-    tree.insert(1000);
-    tree.insert(1000);
-    tree.insert(1222);
-    tree.insert(13433); // 20
-    tree.insert(3424553);
-    tree.insert(3424555);
-    tree.insert(-200);
+    tree.insert(3);
+    
+    tree.del(25);
+    tree.del(22);
+    tree.del(14);
+    tree.del(7);
+    tree.del(3);
+        tree.del(2);
+
+    tree.del(4);
+        tree.insert(3);
+    tree.insert(25);
+
+    // tree.insert(-1);
+    // tree.insert(-1);
+    // tree.insert(100);
+    // tree.insert(2);
+    // tree.insert(555);
+    // tree.insert(69);
+    // tree.insert(69);
+    // tree.insert(69); // 9
+    // tree.insert(73);
+    // tree.insert(88);
+    // tree.insert(92);
+    // tree.insert(97); //13
+    // tree.insert(97);
+    // tree.insert(97); //15
+    // tree.insert(-100);
+    // tree.insert(1000);
+    // tree.insert(1000);
+    // tree.insert(1222);
+    // tree.insert(13433); // 20
+    // tree.insert(3424553);
+    // tree.insert(3424555);
+    // tree.insert(-200);
+    // tree.del(3424555);
+    // tree.del(-1);
+    //     tree.del(-1);
+    // tree.del(-1);
+    // tree.del(555);
+    // tree.del(1000);
+    // tree.del(1222);
+    // tree.del(13433);
+    // tree.del(342455);
+    // tree.del(3424553);
 
     tree.view_all();
 
